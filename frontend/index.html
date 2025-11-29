@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TobaccoTrack - Sistem Monitoring Tembakau</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Floating leaves decoration -->
+    <div class="leaf-decoration" style="left: 10%;">🍃</div>
+    <div class="leaf-decoration" style="left: 30%;">🌿</div>
+    <div class="leaf-decoration" style="left: 60%;">🍂</div>
+    <div class="leaf-decoration" style="left: 80%;">🌾</div>
+    
+    <div class="header">
+        <h1>🌿 TobaccoTrack</h1>
+        <p>Sistem Monitoring & Rekomendasi Pertanian Tembakau</p>
+    </div>
+
+    <div class="dashboard">
+        <!-- Weather Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">⛅</span>
+                <h2 class="card-title">Cuaca Real-Time</h2>
+            </div>
+            
+            <div class="region-selector">
+                <select id="regionSelect">
+                    <option value="Jember">Jember</option>
+                    <option value="Temanggung">Temanggung</option>
+                    <option value="Lombok">Lombok</option>
+                    <option value="Klaten">Klaten</option>
+                    <option value="Sumedang">Sumedang</option>
+                </select>
+                <button class="btn btn-secondary" onclick="fetchWeather()">🔄 Refresh</button>
+            </div>
+
+            <div id="weatherLoading" class="loading" style="display:none;">Memuat data cuaca...</div>
+            <div id="weatherData">
+                <div class="weather-info">
+                    <div class="weather-item">
+                        <div class="weather-label">🌡️ Suhu</div>
+                        <div class="weather-value" id="temp">--</div>
+                        <div class="weather-label">°C</div>
+                    </div>
+                    <div class="weather-item">
+                        <div class="weather-label">💧 Kelembaban</div>
+                        <div class="weather-value" id="humidity">--</div>
+                        <div class="weather-label">%</div>
+                    </div>
+                    <div class="weather-item">
+                        <div class="weather-label">🌧️ Curah Hujan</div>
+                        <div class="weather-value" id="rain">--</div>
+                        <div class="weather-label">mm</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="card info-sidebar">
+            <div class="card-header">
+                <span class="card-icon">📚</span>
+                <h2 class="card-title">Info Pertanian</h2>
+            </div>
+            
+            <div class="info-poster">
+                <div class="poster-image">
+                    <img src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=80" 
+                         alt="Kebun Tembakau" 
+                         onerror="this.src='https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80'">
+                    <div class="poster-overlay">
+                        <h3>Dapatkan info cara panen</h3>
+                        <p>Pertanian Berkelanjutan</p>
+                    </div>
+                </div>
+                
+                <div class="poster-image">
+                    <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80" 
+                         alt="Petani Tembakau"
+                         onerror="this.src='https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80'">
+                    <div class="poster-overlay">
+                        <h3>Ketahui bagaimana produk bisa berkualitas</h3>
+                        <p>Tembakau lokal</p>
+                    </div>
+                </div>
+                
+                <div class="info-tips">
+                    <h3>💡 Tips Pertanian</h3>
+                    <ul>
+                        <li><strong>Waktu Tanam Ideal:</strong><br>Musim kemarau (April-Oktober)</li>
+                        <li><strong>Suhu Optimal:</strong><br>20-30°C untuk pertumbuhan terbaik</li>
+                        <li><strong>Kelembaban:</strong><br>60-80% untuk hasil maksimal</li>
+                        <li><strong>Jarak Tanam:</strong><br>70cm x 50cm antar tanaman</li>
+                        <li><strong>Masa Panen:</strong><br>90-120 hari setelah tanam</li>
+                    </ul>
+                </div>
+                
+                <div class="quick-stats">
+                    <h3>📊 Fakta Tembakau Indonesia</h3>
+                    <div class="stat-item">
+                        <span class="stat-icon">🌾</span>
+                        <div>
+                            <div class="stat-label">Produksi Nasional</div>
+                            <div class="stat-value">196.154 ton/tahun</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">👨‍🌾</span>
+                        <div>
+                            <div class="stat-label">Petani Tembakau</div>
+                            <div class="stat-value">500.000+ keluarga</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">📍</span>
+                        <div>
+                            <div class="stat-label">Sentra Produksi</div>
+                            <div class="stat-value">Jatim, Jateng, NTB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation Card -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <div class="card-header">
+                <span class="card-icon">💡</span>
+                <h2 class="card-title">Rekomendasi Pertanian</h2>
+            </div>
+            
+            <div id="recommendationLoading" class="loading" style="display:none;">Menganalisis kondisi cuaca...</div>
+            <div id="recommendationData" style="display:none;">
+                <!-- Status Badge -->
+                <div id="statusBadge" class="status-badge"></div>
+                
+                <!-- Main Advice -->
+                <div class="main-advice" id="mainAdvice"></div>
+                
+                <!-- Detailed Recommendations Grid -->
+                <div class="recommendation-grid">
+                    <div class="rec-card">
+                        <div class="rec-icon">🌱</div>
+                        <div class="rec-title">Penanaman</div>
+                        <div class="rec-content" id="plantingAdvice"></div>
+                    </div>
+                    
+                    <div class="rec-card">
+                        <div class="rec-icon">🌾</div>
+                        <div class="rec-title">Pemanenan</div>
+                        <div class="rec-content" id="harvestAdvice"></div>
+                    </div>
+                    
+                    <div class="rec-card">
+                        <div class="rec-icon">☀️</div>
+                        <div class="rec-title">Pengeringan</div>
+                        <div class="rec-content" id="dryingAdvice"></div>
+                    </div>
+                    
+                    <div class="rec-card">
+                        <div class="rec-icon">💧</div>
+                        <div class="rec-title">Irigasi</div>
+                        <div class="rec-content" id="irrigationAdvice"></div>
+                    </div>
+                    
+                    <div class="rec-card" style="grid-column: 1 / -1;">
+                        <div class="rec-icon">🐛</div>
+                        <div class="rec-title">Hama & Penyakit</div>
+                        <div class="rec-content" id="pestWarning"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="fetchAdvancedRecommendation()" style="margin-top: 15px; width: 100%;">
+                🎯 Dapatkan Rekomendasi Detail
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Price Form -->
+    <div class="card" style="margin-bottom: 30px;">
+        <div class="card-header">
+            <span class="card-icon">💰</span>
+            <h2 class="card-title">Tambah Data Harga</h2>
+        </div>
+        
+        <div id="formAlert" style="display:none;"></div>
+        
+        <form id="priceForm" onsubmit="addPrice(event)">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div class="form-group">
+                    <label for="priceRegion">Region/Daerah *</label>
+                    <select id="priceRegion" required>
+                        <option value="">Pilih Daerah</option>
+                        <option value="Jember">Jember</option>
+                        <option value="Temanggung">Temanggung</option>
+                        <option value="Lombok">Lombok</option>
+                        <option value="Klaten">Klaten</option>
+                        <option value="Sumedang">Sumedang</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priceValue">Harga *</label>
+                    <input type="number" id="priceValue" step="0.01" placeholder="Contoh: 25000" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priceUnit">Satuan *</label>
+                    <select id="priceUnit" required>
+                        <option value="">Pilih Satuan</option>
+                        <option value="kg">Kilogram (kg)</option>
+                        <option value="ton">Ton</option>
+                        <option value="kuintal">Kuintal</option>
+                        <option value="bal">Bal</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priceSource">Sumber Data *</label>
+                    <input type="text" id="priceSource" placeholder="Contoh: Pasar Tembakau Jember" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="priceDate">Tanggal Pencatatan *</label>
+                    <input type="datetime-local" id="priceDate" required>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                ➕ Tambah Data Harga
+            </button>
+        </form>
+    </div>
+
+    <!-- Price Table -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-icon">📊</span>
+            <h2 class="card-title">Data Harga Tembakau</h2>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="autoFetchPrices()" id="autoFetchBtn">
+                🌐 Auto-Fetch Harga (Scraping)
+            </button>
+            <button class="btn btn-secondary" onclick="fetchPrices()">
+                🔄 Refresh Data
+            </button>
+        </div>
+        
+        <div id="pricesLoading" class="loading" style="display:none;">Memuat data harga...</div>
+        
+        <div id="pricesData">
+            <div class="empty-state">
+                <div class="empty-state-icon">📦</div>
+                <p>Belum ada data harga. Klik "Auto-Fetch Harga" untuk mengambil data otomatis atau tambahkan data manual.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
