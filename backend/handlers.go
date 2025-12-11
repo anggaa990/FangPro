@@ -8,7 +8,7 @@ import (
 )
 
 // ============================================
-// FUNCTIONAL PROGRAMMING TYPES
+// FUNCTIONAL PROGRAMMING
 // ============================================
 
 type HandlerFunc func(http.ResponseWriter, *http.Request)
@@ -122,7 +122,7 @@ func withErrorHandling(handler func(http.ResponseWriter, *http.Request) error) H
 // FUNCTION COMPOSITION
 // ============================================
 
-// Chain multiple middlewares - applies from right to left
+// multiple middlewares 
 func chain(handler HandlerFunc, middlewares ...MiddlewareFunc) HandlerFunc {
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		handler = middlewares[i](handler)
@@ -134,7 +134,7 @@ func chain(handler HandlerFunc, middlewares ...MiddlewareFunc) HandlerFunc {
 // CLOSURE - HANDLER FACTORY
 // ============================================
 
-// Factory function for creating handlers with dependency injection
+
 func makeWeatherHandler(fetchWeather func(string) (*WeatherData, error)) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		region := getRegionOrDefault(r.URL.Query().Get("region"))
