@@ -118,7 +118,7 @@ func (s *NewsPortalScraper) Scrape() ([]ScrapedPrice, error) {
     query := "harga+tembakau+hari+ini+jember+temanggung"
     searchURL := fmt.Sprintf("https://www.google.com/search?q=%s&tbm=nws", query)
     
-    // Note: Google search perlu User-Agent yang proper
+    // Note: Google search User-Agent
     client := &http.Client{
         Timeout: 10 * time.Second,
     }

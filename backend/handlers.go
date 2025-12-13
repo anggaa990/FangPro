@@ -8,17 +8,18 @@ import (
 )
 
 // ============================================
-// FUNCTIONAL PROGRAMMING
+// 1. FIRST-CLASS FUNCTION
+// Function sebagai tipe data yang bisa disimpan dalam variabel
 // ============================================
 
 type HandlerFunc func(http.ResponseWriter, *http.Request)
 type MiddlewareFunc func(HandlerFunc) HandlerFunc
 
 // ============================================
-// PURE FUNCTIONS - No Side Effects
+// 2. PURE FUNCTION
+// Fungsi yang tidak memiliki side effects dan selalu return value yang sama untuk input yang sama
 // ============================================
 
-// Get region with default value
 func getRegionOrDefault(region string) string {
 	if region == "" {
 		return "Jember"
@@ -26,7 +27,6 @@ func getRegionOrDefault(region string) string {
 	return region
 }
 
-// Build recommendation response
 func buildRecommendationResponse(result, region string, temp, humidity, rain float64) map[string]interface{} {
 	return map[string]interface{}{
 		"recommendation": result,
@@ -37,7 +37,6 @@ func buildRecommendationResponse(result, region string, temp, humidity, rain flo
 	}
 }
 
-// Build status response
 func buildStatusResponse(status, message string) map[string]string {
 	return map[string]string{
 		"status":  status,
@@ -45,26 +44,20 @@ func buildStatusResponse(status, message string) map[string]string {
 	}
 }
 
-// ============================================
-// RESPONSE HELPER FUNCTIONS
-// ============================================
-
-// Generic JSON response writer
 func respondJSON(w http.ResponseWriter, statusCode int, data interface{}) error {
 	w.WriteHeader(statusCode)
 	return json.NewEncoder(w).Encode(data)
 }
 
-// Generic error response writer
 func respondError(w http.ResponseWriter, message string, statusCode int) {
 	http.Error(w, message, statusCode)
 }
 
 // ============================================
-// HIGHER ORDER FUNCTIONS - MIDDLEWARE
+// 3. HIGHER-ORDER FUNCTION
+// Fungsi yang menerima fungsi sebagai parameter atau mengembalikan fungsi
 // ============================================
 
-// Logging middleware
 func withLogging(next HandlerFunc) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.URL.RawQuery)
@@ -72,7 +65,6 @@ func withLogging(next HandlerFunc) HandlerFunc {
 	}
 }
 
-// Recovery middleware - panic handler
 func withRecovery(next HandlerFunc) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -85,7 +77,6 @@ func withRecovery(next HandlerFunc) HandlerFunc {
 	}
 }
 
-// JSON Content-Type middleware
 func withJSONContentType(next HandlerFunc) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -93,7 +84,6 @@ func withJSONContentType(next HandlerFunc) HandlerFunc {
 	}
 }
 
-// Method validation middleware - Higher Order Function that returns middleware
 func withMethodValidation(allowedMethods ...string) MiddlewareFunc {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +98,6 @@ func withMethodValidation(allowedMethods ...string) MiddlewareFunc {
 	}
 }
 
-// Error handling middleware wrapper
 func withErrorHandling(handler func(http.ResponseWriter, *http.Request) error) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := handler(w, r); err != nil {
@@ -119,10 +108,10 @@ func withErrorHandling(handler func(http.ResponseWriter, *http.Request) error) H
 }
 
 // ============================================
-// FUNCTION COMPOSITION
+// 4. FUNCTION COMPOSITION
+// Menggabungkan beberapa fungsi menjadi satu fungsi baru
 // ============================================
 
-// multiple middlewares 
 func chain(handler HandlerFunc, middlewares ...MiddlewareFunc) HandlerFunc {
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		handler = middlewares[i](handler)
@@ -131,9 +120,9 @@ func chain(handler HandlerFunc, middlewares ...MiddlewareFunc) HandlerFunc {
 }
 
 // ============================================
-// CLOSURE - HANDLER FACTORY
+// 5. CLOSURE
+// Fungsi yang mengakses variabel dari scope luar (lexical scoping)
 // ============================================
-
 
 func makeWeatherHandler(fetchWeather func(string) (*WeatherData, error)) HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -150,10 +139,10 @@ func makeWeatherHandler(fetchWeather func(string) (*WeatherData, error)) Handler
 }
 
 // ============================================
-// MAP/FILTER/REDUCE - DATA TRANSFORMATION
+// 6. MAP/FILTER/REDUCE
+// Operasi transformasi data secara fungsional
 // ============================================
 
-// Generic Map function
 func Map[T, U any](slice []T, fn func(T) U) []U {
 	result := make([]U, len(slice))
 	for i, v := range slice {
@@ -162,7 +151,6 @@ func Map[T, U any](slice []T, fn func(T) U) []U {
 	return result
 }
 
-// Generic Filter function
 func Filter[T any](slice []T, predicate func(T) bool) []T {
 	result := []T{}
 	for _, v := range slice {
@@ -173,7 +161,6 @@ func Filter[T any](slice []T, predicate func(T) bool) []T {
 	return result
 }
 
-// Generic Reduce function
 func Reduce[T, U any](slice []T, initial U, fn func(U, T) U) U {
 	result := initial
 	for _, v := range slice {
@@ -183,7 +170,8 @@ func Reduce[T, U any](slice []T, initial U, fn func(U, T) U) U {
 }
 
 // ============================================
-// FUNCTIONAL ERROR HANDLING - Result Type
+// 7. IMMUTABILITY
+// Data tidak dapat diubah setelah dibuat, selalu membuat copy baru
 // ============================================
 
 type Result[T any] struct {
@@ -191,12 +179,10 @@ type Result[T any] struct {
 	Error error
 }
 
-// Create new Result
 func NewResult[T any](value T, err error) Result[T] {
 	return Result[T]{Value: value, Error: err}
 }
 
-// Map transforms the value if no error
 func (r Result[T]) Map(fn func(T) T) Result[T] {
 	if r.Error != nil {
 		return r
@@ -204,7 +190,6 @@ func (r Result[T]) Map(fn func(T) T) Result[T] {
 	return Result[T]{Value: fn(r.Value), Error: nil}
 }
 
-// OrElse provides a default value if error
 func (r Result[T]) OrElse(defaultValue T) T {
 	if r.Error != nil {
 		return defaultValue
@@ -213,10 +198,10 @@ func (r Result[T]) OrElse(defaultValue T) T {
 }
 
 // ============================================
-// RECURSION 🔄
+// 8. RECURSION
+// Fungsi yang memanggil dirinya sendiri
 // ============================================
 
-// Factorial - Basic recursion example
 func Factorial(n int) int {
 	if n <= 1 {
 		return 1
@@ -224,7 +209,6 @@ func Factorial(n int) int {
 	return n * Factorial(n-1)
 }
 
-// FactorialTailRecursive - Tail recursion (more efficient)
 func FactorialTailRecursive(n int) int {
 	return factorialHelper(n, 1)
 }
@@ -236,7 +220,6 @@ func factorialHelper(n, acc int) int {
 	return factorialHelper(n-1, n*acc)
 }
 
-// Fibonacci - Recursive fibonacci
 func Fibonacci(n int) int {
 	if n <= 1 {
 		return n
@@ -244,7 +227,6 @@ func Fibonacci(n int) int {
 	return Fibonacci(n-1) + Fibonacci(n-2)
 }
 
-// FibonacciMemoized - Optimized with memoization
 func FibonacciMemoized(n int) int {
 	memo := make(map[int]int)
 	return fibHelper(n, memo)
@@ -261,7 +243,6 @@ func fibHelper(n int, memo map[int]int) int {
 	return memo[n]
 }
 
-// SumSliceRecursive - Sum array elements recursively
 func SumSliceRecursive(slice []int) int {
 	if len(slice) == 0 {
 		return 0
@@ -269,7 +250,6 @@ func SumSliceRecursive(slice []int) int {
 	return slice[0] + SumSliceRecursive(slice[1:])
 }
 
-// FilterRecursive - Recursive filter implementation
 func FilterRecursive[T any](slice []T, predicate func(T) bool) []T {
 	if len(slice) == 0 {
 		return []T{}
@@ -284,7 +264,6 @@ func FilterRecursive[T any](slice []T, predicate func(T) bool) []T {
 	return FilterRecursive(tail, predicate)
 }
 
-// DeepCalculatePriceStats - Recursive calculation for nested price structures
 func DeepCalculatePriceStats(prices []Price, depth int) map[string]interface{} {
 	if depth <= 0 || len(prices) == 0 {
 		return map[string]interface{}{
@@ -311,10 +290,70 @@ func DeepCalculatePriceStats(prices []Price, depth int) map[string]interface{} {
 }
 
 // ============================================
-// FUNCTIONAL CONCURRENCY 🚀
+// 9. LAZY EVALUATION
+// Evaluasi dilakukan hanya ketika dibutuhkan menggunakan channels
 // ============================================
 
-// ParallelMap - Map dengan goroutines untuk processing parallel
+type Pipeline[T any] struct {
+	input chan T
+}
+
+func NewPipeline[T any](data []T) *Pipeline[T] {
+	p := &Pipeline[T]{
+		input: make(chan T, len(data)),
+	}
+
+	go func() {
+		for _, item := range data {
+			p.input <- item
+		}
+		close(p.input)
+	}()
+
+	return p
+}
+
+func PipeMap[T, U any](input chan T, fn func(T) U) chan U {
+	output := make(chan U)
+
+	go func() {
+		for item := range input {
+			output <- fn(item)
+		}
+		close(output)
+	}()
+
+	return output
+}
+
+func PipeFilter[T any](input chan T, predicate func(T) bool) chan T {
+	output := make(chan T)
+
+	go func() {
+		for item := range input {
+			if predicate(item) {
+				output <- item
+			}
+		}
+		close(output)
+	}()
+
+	return output
+}
+
+func CollectFromChannel[T any](ch chan T) []T {
+	result := []T{}
+	for item := range ch {
+		result = append(result, item)
+	}
+	return result
+}
+
+// ============================================
+// 10. DESAIN POLA FUNGSIONAL
+// Pattern: Concurrency dengan Goroutines, Worker Pool, dan Parallel Processing
+// ============================================
+
 func ParallelMap[T, U any](slice []T, fn func(T) U) []U {
 	result := make([]U, len(slice))
 	var wg sync.WaitGroup
@@ -335,7 +374,6 @@ func ParallelMap[T, U any](slice []T, fn func(T) U) []U {
 	return result
 }
 
-// ParallelFilter - Filter dengan concurrent processing
 func ParallelFilter[T any](slice []T, predicate func(T) bool) []T {
 	resultChan := make(chan T, len(slice))
 	var wg sync.WaitGroup
@@ -350,13 +388,11 @@ func ParallelFilter[T any](slice []T, predicate func(T) bool) []T {
 		}(v)
 	}
 
-	// Close channel after all goroutines finish
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
 
-	// Collect results
 	result := []T{}
 	for v := range resultChan {
 		result = append(result, v)
@@ -365,7 +401,6 @@ func ParallelFilter[T any](slice []T, predicate func(T) bool) []T {
 	return result
 }
 
-// ParallelReduce - Concurrent reduce operation
 func ParallelReduce[T any](slice []T, initial T, fn func(T, T) T, workers int) T {
 	if len(slice) == 0 {
 		return initial
@@ -375,7 +410,6 @@ func ParallelReduce[T any](slice []T, initial T, fn func(T, T) T, workers int) T
 	resultChan := make(chan T, workers)
 	var wg sync.WaitGroup
 
-	// Process chunks in parallel
 	for i := 0; i < workers; i++ {
 		start := i * chunkSize
 		end := start + chunkSize
@@ -402,7 +436,6 @@ func ParallelReduce[T any](slice []T, initial T, fn func(T, T) T, workers int) T
 		close(resultChan)
 	}()
 
-	// Combine results
 	finalResult := initial
 	for partialResult := range resultChan {
 		finalResult = fn(finalResult, partialResult)
@@ -411,7 +444,6 @@ func ParallelReduce[T any](slice []T, initial T, fn func(T, T) T, workers int) T
 	return finalResult
 }
 
-// FetchMultipleRegionsWeather - Concurrent weather fetching
 func FetchMultipleRegionsWeather(regions []string) map[string]*WeatherData {
 	results := make(map[string]*WeatherData)
 	var mu sync.Mutex
@@ -437,7 +469,6 @@ func FetchMultipleRegionsWeather(regions []string) map[string]*WeatherData {
 	return results
 }
 
-// FetchMultiplePricesSources - Concurrent price fetching from multiple sources
 func FetchMultiplePricesSources(sources []func() error) []error {
 	errorChan := make(chan error, len(sources))
 	var wg sync.WaitGroup
@@ -457,7 +488,6 @@ func FetchMultiplePricesSources(sources []func() error) []error {
 		close(errorChan)
 	}()
 
-	// Collect errors
 	var errors []error
 	for err := range errorChan {
 		errors = append(errors, err)
@@ -466,67 +496,6 @@ func FetchMultiplePricesSources(sources []func() error) []error {
 	return errors
 }
 
-// Pipeline - Functional pipeline for data processing
-type Pipeline[T any] struct {
-	input chan T
-}
-
-// NewPipeline creates a new pipeline
-func NewPipeline[T any](data []T) *Pipeline[T] {
-	p := &Pipeline[T]{
-		input: make(chan T, len(data)),
-	}
-
-	go func() {
-		for _, item := range data {
-			p.input <- item
-		}
-		close(p.input)
-	}()
-
-	return p
-}
-
-// PipeMap - Map operation in pipeline
-func PipeMap[T, U any](input chan T, fn func(T) U) chan U {
-	output := make(chan U)
-
-	go func() {
-		for item := range input {
-			output <- fn(item)
-		}
-		close(output)
-	}()
-
-	return output
-}
-
-// PipeFilter - Filter operation in pipeline
-func PipeFilter[T any](input chan T, predicate func(T) bool) chan T {
-	output := make(chan T)
-
-	go func() {
-		for item := range input {
-			if predicate(item) {
-				output <- item
-			}
-		}
-		close(output)
-	}()
-
-	return output
-}
-
-// CollectFromChannel - Collect all items from channel
-func CollectFromChannel[T any](ch chan T) []T {
-	result := []T{}
-	for item := range ch {
-		result = append(result, item)
-	}
-	return result
-}
-
-// WorkerPool - Generic worker pool pattern
 type WorkerPool[T, U any] struct {
 	workers int
 	jobs    chan T
@@ -534,7 +503,6 @@ type WorkerPool[T, U any] struct {
 	wg      sync.WaitGroup
 }
 
-// NewWorkerPool creates a worker pool
 func NewWorkerPool[T, U any](workers int, fn func(T) U) *WorkerPool[T, U] {
 	pool := &WorkerPool[T, U]{
 		workers: workers,
@@ -542,7 +510,6 @@ func NewWorkerPool[T, U any](workers int, fn func(T) U) *WorkerPool[T, U] {
 		results: make(chan U, workers*2),
 	}
 
-	// Start workers
 	for i := 0; i < workers; i++ {
 		pool.wg.Add(1)
 		go func() {
@@ -553,7 +520,6 @@ func NewWorkerPool[T, U any](workers int, fn func(T) U) *WorkerPool[T, U] {
 		}()
 	}
 
-	// Close results channel when all workers done
 	go func() {
 		pool.wg.Wait()
 		close(pool.results)
@@ -562,26 +528,18 @@ func NewWorkerPool[T, U any](workers int, fn func(T) U) *WorkerPool[T, U] {
 	return pool
 }
 
-// Submit adds job to the pool
 func (wp *WorkerPool[T, U]) Submit(job T) {
 	wp.jobs <- job
 }
 
-// Close closes the job channel
 func (wp *WorkerPool[T, U]) Close() {
 	close(wp.jobs)
 }
 
-// Results returns the results channel
 func (wp *WorkerPool[T, U]) Results() <-chan U {
 	return wp.results
 }
 
-// ============================================
-// REFACTORED HANDLERS
-// ============================================
-
-// RecommendationHandler - Basic recommendation endpoint
 func RecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -605,7 +563,6 @@ func RecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// AdvancedRecommendationHandler - Advanced recommendation endpoint
 func AdvancedRecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -627,7 +584,6 @@ func AdvancedRecommendationHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// WeatherAPIHandler - Using factory pattern with closure
 func WeatherAPIHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		makeWeatherHandler(FetchWeather),
@@ -638,15 +594,11 @@ func WeatherAPIHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// MultiRegionWeatherHandler - Fetch weather for multiple regions concurrently
 func MultiRegionWeatherHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		withErrorHandling(func(w http.ResponseWriter, r *http.Request) error {
 			regions := []string{"Jember", "Surabaya", "Malang", "Banyuwangi"}
-
-			// Fetch weather concurrently for all regions
 			results := FetchMultipleRegionsWeather(regions)
-
 			return respondJSON(w, http.StatusOK, results)
 		}),
 		withJSONContentType,
@@ -656,7 +608,6 @@ func MultiRegionWeatherHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// AddPriceHandler - With method validation and error handling
 func AddPriceHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		withErrorHandling(func(w http.ResponseWriter, r *http.Request) error {
@@ -684,7 +635,6 @@ func AddPriceHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// FetchPricesHandler - With functional fallback pattern
 func FetchPricesHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		withErrorHandling(func(w http.ResponseWriter, r *http.Request) error {
@@ -711,7 +661,6 @@ func FetchPricesHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// GetCurrentPriceHandler - Get latest price by region
 func GetCurrentPriceHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		withErrorHandling(func(w http.ResponseWriter, r *http.Request) error {
@@ -732,7 +681,6 @@ func GetCurrentPriceHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// PricesHandler - Get all prices with functional data transformation
 func PricesHandler(w http.ResponseWriter, r *http.Request) {
 	handler := chain(
 		withErrorHandling(func(w http.ResponseWriter, r *http.Request) error {
@@ -768,18 +716,12 @@ func PricesHandler(w http.ResponseWriter, r *http.Request) {
 	handler(w, r)
 }
 
-// ============================================
-// BONUS: FUNCTIONAL UTILITIES
-// ============================================
-
-// Filter prices by region
 func FilterPricesByRegion(prices []Price, region string) []Price {
 	return Filter(prices, func(p Price) bool {
 		return p.Region == region
 	})
 }
 
-// Calculate average price
 func CalculateAveragePrice(prices []Price) float64 {
 	if len(prices) == 0 {
 		return 0
@@ -792,7 +734,6 @@ func CalculateAveragePrice(prices []Price) float64 {
 	return sum / float64(len(prices))
 }
 
-// Transform prices to simple format
 func TransformPricesToSimple(prices []Price) []map[string]interface{} {
 	return Map(prices, func(p Price) map[string]interface{} {
 		return map[string]interface{}{
